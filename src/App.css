@@ -36,3 +36,18 @@
     transform: rotate(360deg);
   }
 }
+
+table, th, td {
+  border: 1px solid black;
+}
+
+.userId{
+  width:60px;
+}
+.filter{
+  width: 200px;
+  margin-top: 5%;
+}
+.app{
+  margin-left: 5%;
+}

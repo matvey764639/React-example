@@ -1,0 +1,292 @@
+import React, {FC, useEffect, useState} from 'react';
+import logo from './logo.svg';
+import './App.css';
+import Modal from 'react-bootstrap/Modal'
+import Button from 'react-bootstrap/Button'
+
+class App extends React.Component {
+    state: any = {
+        value: 0,
+        targetId: 0,
+        showComments: false,
+        edit: false,
+        posts: [],
+        delete: false
+    }
+
+    deletePost = () => {
+        let posts = this.state.posts;
+        delete posts[this.state.targetId - 1]
+        this.setState({posts: posts, delete: false})
+    }
+
+    saveEdit = (id: number, title: string, body: string) => {
+        let posts: any = this.state.posts
+        posts[id - 1].title = title
+        posts[id - 1].body = body
+        this.setState({posts, edit: false})
+    }
+
+    getPostsData = async (url: string) => {
+        try {
+            const response = await fetch(url);
+            const posts = await response.json();
+            this.setState({posts});
+        } catch (e) {
+            console.log(e)
+        }
+    }
+
+    componentDidMount() {
+        this.getPostsData('https://jsonplaceholder.typicode.com/posts')
+    }
+
+    render() {
+        return (
+            <div className="app">
+                <FilterBar
+                    value={this.state.value}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => this.setState({value: e.target.value})}
+                />
+                <ListOfPosts
+                    filter={this.state.value}
+                    handleDelete={(id: number) => this.setState({delete: true, targetId: id})}
+                    handleEdit={(id: number) => this.setState({edit: true, targetId: id})}
+                    handleClick={(id) => this.setState({targetId: id, showComments: true})}
+                    posts={this.state.posts}
+                />
+                {this.state.showComments && <Comments
+                    postId={this.state.targetId}
+                    show={this.state.showComments}
+                    hideComments={() => this.setState({showComments: false})}
+                />}
+
+                {this.state.edit && <EditPost
+                    show={this.state.edit}
+                    post={this.state.posts[this.state.targetId - 1]}
+                    handleSave={this.saveEdit}
+                    handleClose={() => this.setState({edit: false})}/>}
+                {this.state.delete && <DeletePost show={this.state.delete}
+                                                  handleYes={this.deletePost}
+                                                  handleNo={() => this.setState({delete: false})}/>}
+            </div>
+        );
+    }
+
+}
+
+interface FilterBarProps {
+    value: string;
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+const FilterBar: FC<FilterBarProps> = ({onChange, value}) => (
+    <form className="filter">
+        <div className="mb-3">
+            <label htmlFor="exampleInputEmail1" className="form-label">Фильтр</label>
+            <input
+                value={value}
+                onChange={onChange}
+                type="number"
+                className="form-control"
+                id="exampleInputEmail1"
+                aria-describedby="emailHelp"
+            />
+        </div>
+    </form>
+);
+
+interface PostItem {
+    userId: number;
+    id: number;
+    title: string;
+    body: string;
+}
+
+
+interface ListOfPostsProps {
+    filter: number;
+    handleEdit: (id: number) => void;
+    handleDelete: (id: number) => void;
+    handleClick: (id: number) => void;
+    posts: PostItem[];
+}
+
+function ListOfPosts(props: ListOfPostsProps) {
+    let posts = props.posts.filter((post) => post.id == props.filter || post.userId == props.filter);
+
+    return (
+        <table className="w-75">
+            <thead>
+            <tr>
+                <th className="border-end border-bottom text-center">userId</th>
+                <th className="border-end border-bottom text-center">id</th>
+                <th className="border-end border-bottom text-center">title</th>
+                <th className="border-end border-bottom text-center">body</th>
+            </tr>
+            </thead>
+            <tbody>
+            {posts.map((row: PostItem) =>
+                <MakeRow
+                    key={row.id}
+                    handleEdit={props.handleEdit}
+                    handleDelete={props.handleDelete}
+                    handleClick={props.handleClick}
+                    {...row}
+            />)}
+            </tbody>
+        </table>
+    );
+}
+
+interface RowProps {
+    handleEdit: (id: number) => void;
+    handleDelete: (id: number) => void;
+    handleClick: (id: number) => void;
+    userId: number;
+    id: number;
+    title: string;
+    body: string;
+}
+
+function MakeRow(props: RowProps) {
+    return (
+        <tr>
+            <th onClick={() => props.handleClick(props.id)}
+                className="userId border-end border-bottom text-center">{props.userId}</th>
+            <th onClick={() => props.handleClick(props.id)}
+                className="id border-end border-bottom text-center">{props.id}</th>
+            <th onClick={() => props.handleClick(props.id)} className="border-end border-bottom">{props.title}</th>
+            <th onClick={() => props.handleClick(props.id)} className="border-end border-bottom">{props.body}</th>
+            <th className="d-flex flex-row justify-content-center">
+                <Button variant="primary" onClick={() => props.handleEdit(props.id)}>Редактировать</Button>
+                <Button variant="danger" onClick={() => props.handleDelete(props.id)}>Удалить</Button>
+            </th>
+        </tr>
+    );
+}
+
+interface CommentProps {
+    postId: number;
+    id: number;
+    name: string;
+    email: string;
+    body: string;
+}
+
+function MakeComment(props: CommentProps) {
+    return (
+        <>
+            <h3>{props.name}</h3>
+            <div>{props.body}</div>
+        </>
+    )
+}
+
+interface CommentsProps {
+    postId: number;
+    show: boolean;
+    hideComments: () => void;
+}
+
+function Comments(props: CommentsProps) {
+    const [comments, setComments] = useState([]);
+    let getCommentsData = async () => {
+        try {
+            let url = "https://jsonplaceholder.typicode.com/posts/" + props.postId.toString() + "/comments";
+            const response = await fetch(url);
+            const c = await response.json();
+            setComments(c);
+        } catch (e) {
+            console.log(e)
+        }
+    }
+
+    useEffect(() => {
+        getCommentsData()
+    }, []);
+
+    return (
+        <Modal show={props.show} onHide={() => props.hideComments()}>
+            <Modal.Header>
+                <Modal.Title className="text-center">Comments</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                {comments.length > 0
+                    ? comments.map((comment: any) => <MakeComment key={comment.id} {...comment}/>)
+                    : <h3>No comments</h3>
+                }
+            </Modal.Body>
+        </Modal>
+    );
+}
+
+function EditPost(props: any) {
+    const [title, setTitle] = useState(props.post.title)
+    const [body, setBody] = useState(props.post.body)
+    return (
+        <Modal show={props.show}>
+            <Modal.Header>
+                <Modal.Title>Edit post</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <div className="mb-3">
+                    <label htmlFor="exampleInputEmail1" className="form-label">Title</label>
+                    <input
+                        value={title}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
+                        type="email"
+                        className="form-control"
+                        id="exampleInputEmail1"
+                        aria-describedby="emailHelp"
+                    />
+                </div>
+                <div className="mb-3">
+                    <label htmlFor="exampleInputEmail1" className="form-label">Body</label>
+                    <input
+                        value={body}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBody(e.target.value)}
+                        type="email"
+                        className="form-control"
+                        id="exampleInputEmail1"
+                        aria-describedby="emailHelp"
+                    />
+                </div>
+            </Modal.Body>
+            <Modal.Footer>
+                <Button variant="secondary" onClick={() => props.handleClose()}>
+                    Close
+                </Button>
+                <Button variant="primary" onClick={() => props.handleSave(props.post.id, title, body)}>
+                    Save Changes
+                </Button>
+            </Modal.Footer>
+        </Modal>
+    );
+}
+
+interface DeletePostProps {
+    show: boolean;
+    handleYes: () => void;
+    handleNo: () => void;
+}
+
+function DeletePost(props: DeletePostProps) {
+    return (
+        <Modal show={props.show}>
+            <Modal.Header>
+                <Modal.Title>Удалить пост?</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <Button variant="primary" onClick={() => props.handleYes()}>
+                    Да
+                </Button>
+                <Button variant="secondary" onClick={() => props.handleNo()}>
+                    Нет
+                </Button>
+            </Modal.Body>
+        </Modal>
+    );
+}
+
+export default App;
