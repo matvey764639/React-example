@@ -1,36 +1,55 @@
-import React, {useState} from "react";
+import React, { memo, useEffect } from "react";
 import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
+import { useDispatch, useSelector } from "react-redux";
+import { setEditPost, setIsEdit } from "./editPostSlice";
+import { replacePost } from "./listOfPostsSlice";
+import { PostItem } from "./listOfPostsSlice";
+import { StoreType } from "../app/store";
 
+const EditPost: React.FC = () => {
+    const isEdit = useSelector<StoreType, boolean>(
+        ({ editPost }) => editPost.isEdit
+    );
+    const targetId = useSelector<StoreType, number>(({ app }) => app.targetId);
+    const posts = useSelector<StoreType, PostItem[]>(
+        ({ posts }) => posts.posts
+    );
+    let post = {
+        ...useSelector<StoreType, PostItem>(({ editPost }) => editPost.post),
+    };
+    const dispatch = useDispatch();
+    const getPostById = (targetId: number) => {
+        let filteredPosts = posts.filter((p) => p.id === targetId);
+        let ind = posts.indexOf(filteredPosts[0]);
+        return posts[ind];
+    };
+    useEffect(() => {
+        const newPost = { ...getPostById(targetId) };
+        dispatch(setEditPost(newPost));
+    }, []);
 
-interface PostItem {
-    userId: number;
-    id: number;
-    title: string;
-    body: string;
-}
-interface EditPostProps{
-    show:boolean;
-    post:PostItem;
-    handleSave:(id:number, title:string, body:string)=>void;
-    handleClose:()=>void;
-}
+    const handleSave = () => {
+        dispatch(replacePost(post));
+        dispatch(setIsEdit(false));
+    };
 
-
-function EditPost(props: EditPostProps) {
-    const [title, setTitle] = useState(props.post.title)
-    const [body, setBody] = useState(props.post.body)
     return (
-        <Modal show={props.show}>
+        <Modal show={isEdit}>
             <Modal.Header>
                 <Modal.Title>Edit post</Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 <div className="mb-3">
-                    <label htmlFor="exampleInputEmail1" className="form-label">Title</label>
+                    <label htmlFor="exampleInputEmail1" className="form-label">
+                        Title
+                    </label>
                     <input
-                        value={title}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
+                        value={post.title}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                            post.title = e.target.value;
+                            dispatch(setEditPost(post));
+                        }}
                         type="email"
                         className="form-control"
                         id="exampleInputEmail1"
@@ -38,10 +57,15 @@ function EditPost(props: EditPostProps) {
                     />
                 </div>
                 <div className="mb-3">
-                    <label htmlFor="exampleInputEmail1" className="form-label">Body</label>
+                    <label htmlFor="exampleInputEmail1" className="form-label">
+                        Body
+                    </label>
                     <input
-                        value={body}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBody(e.target.value)}
+                        value={post.body}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                            post.body = e.target.value;
+                            dispatch(setEditPost(post));
+                        }}
                         type="email"
                         className="form-control"
                         id="exampleInputEmail1"
@@ -50,15 +74,18 @@ function EditPost(props: EditPostProps) {
                 </div>
             </Modal.Body>
             <Modal.Footer>
-                <Button variant="secondary" onClick={() => props.handleClose()}>
+                <Button
+                    variant="secondary"
+                    onClick={() => dispatch(setIsEdit(false))}
+                >
                     Close
                 </Button>
-                <Button variant="primary" onClick={() => props.handleSave(props.post.id, title, body)}>
+                <Button variant="primary" onClick={() => handleSave()}>
                     Save Changes
                 </Button>
             </Modal.Footer>
         </Modal>
     );
-}
+};
 
-export default EditPost;
+export default memo(EditPost);
