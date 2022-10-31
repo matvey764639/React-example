@@ -1,35 +1,24 @@
 import React, { memo, useEffect } from "react";
 import Spinner from "react-bootstrap/Spinner";
 import MakeRow from "./MakeRow";
-import { PostItem, loadPosts } from "./listOfPostsSlice";
-import { useDispatch, useSelector } from "react-redux";
-import { StoreType } from "../app/store";
+import { listOfPostsStore } from "./ListOfPostsStore";
+import { filterBarStore } from "./FilterBarStore";
+import { observer } from "mobx-react-lite";
 
 const ListOfPosts: React.FC = () => {
-    let posts = useSelector<StoreType, PostItem[]>(({ posts }) => posts.posts);
-    const isLoading = useSelector<StoreType, boolean>(
-        ({ posts }) => posts.isLoading
-    );
-    const isFilter = useSelector<StoreType, boolean>(
-        ({ filterBar }) => filterBar.isFilter
-    );
-    const filter = useSelector<StoreType, string>(
-        ({ filterBar }) => filterBar.filter
-    );
-    const dispatch = useDispatch<any>();
     useEffect(() => {
-        dispatch(loadPosts("https://jsonplaceholder.typicode.com/posts"));
+        listOfPostsStore.loadPosts();
     }, []);
-
-    if (isFilter) {
+    let posts = listOfPostsStore.posts;
+    if (filterBarStore.isFilter) {
         posts = posts.filter(
             (post) =>
-                post.title.indexOf(filter) !== -1 ||
-                post.body.indexOf(filter) !== -1
+                post.title.indexOf(filterBarStore.filter) !== -1 ||
+                post.body.indexOf(filterBarStore.filter) !== -1
         );
     }
 
-    if (isLoading) {
+    if (listOfPostsStore.isLoading) {
         return (
             <h3>
                 <Spinner animation="border" role="status" /> Загрузка постов...
@@ -60,4 +49,4 @@ const ListOfPosts: React.FC = () => {
     );
 };
 
-export default memo(ListOfPosts);
+export default observer(ListOfPosts);

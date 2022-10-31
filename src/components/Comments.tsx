@@ -1,9 +1,9 @@
-import React, { memo, useEffect } from "react";
+import React, { useEffect } from "react";
 import Modal from "react-bootstrap/Modal";
 import Spinner from "react-bootstrap/Spinner";
-import { useDispatch, useSelector } from "react-redux";
-import { setIsShowComments, CommentItem, loadComments } from "./commentsSlice";
-import { StoreType } from "../app/store";
+import { CommentItem, commentsStore } from "./CommentsStore";
+import { appStore } from "../AppStore";
+import { observer } from "mobx-react-lite";
 
 function MakeComment(props: CommentItem) {
     return (
@@ -14,43 +14,34 @@ function MakeComment(props: CommentItem) {
     );
 }
 
-function Comments() {
-    const show = useSelector<StoreType, boolean>(
-        ({ comments }) => comments.isShowComments
-    );
-    const targetId = useSelector<StoreType, number>(({ app }) => app.targetId);
-    const comments = useSelector<StoreType, CommentItem[]>(
-        ({ comments }) => comments.comments
-    );
-    const isLoading = useSelector<StoreType, boolean>(
-        ({ comments }) => comments.isLoading
-    );
-    const dispatch = useDispatch();
+const Comments: React.FC = observer(() => {
     useEffect(() => {
-        // @ts-ignore
-        dispatch(loadComments(targetId));
+        commentsStore.loadComments(appStore.targetId);
     }, []);
-
+    const comments = commentsStore.comments;
     return (
-        <Modal show={show} onHide={() => dispatch(setIsShowComments(false))}>
+        <Modal
+            show={commentsStore.isShowComments}
+            onHide={() => commentsStore.setIsShowComments(false)}
+        >
             <Modal.Header>
                 <Modal.Title className="text-center">Комментарии</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-                {isLoading && (
+                {commentsStore.isLoading && (
                     <h4>
                         <Spinner animation="border" role="status" /> Загрузка
                         комментариев...
                     </h4>
                 )}
 
-                {(!isLoading &&
-                    comments.map((comment) => (
+                {!commentsStore.isLoading &&
+                    (comments.map((comment) => (
                         <MakeComment key={comment.id} {...comment} />
-                    ))) || <h4>No comments</h4>}
+                    )) || <h4>No comments</h4>)}
             </Modal.Body>
         </Modal>
     );
-}
+});
 
-export default memo(Comments);
+export default Comments;

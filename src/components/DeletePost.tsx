@@ -1,20 +1,14 @@
 import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
-import React, { memo } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { setIsDelete } from "./deletePostSlice";
-import { deletePost } from "./listOfPostsSlice";
-import { StoreType } from "../app/store";
+import React from "react";
+import { deletePostStore } from "./DeletePostStore";
+import { listOfPostsStore } from "./ListOfPostsStore";
+import { appStore } from "../AppStore";
+import { observer } from "mobx-react-lite";
 
-const DeletePost: React.FC = () => {
-    const isDelete = useSelector<StoreType, boolean>(
-        ({ deletePost }) => deletePost.isDelete
-    );
-    const targetId = useSelector<StoreType, number>(({ app }) => app.targetId);
-    const dispatch = useDispatch();
-
+const DeletePost: React.FC = observer(() => {
     return (
-        <Modal show={isDelete}>
+        <Modal show={deletePostStore.isDelete}>
             <Modal.Header>
                 <Modal.Title>Удалить пост?</Modal.Title>
             </Modal.Header>
@@ -22,21 +16,21 @@ const DeletePost: React.FC = () => {
                 <Button
                     variant="primary"
                     onClick={() => {
-                        dispatch(deletePost(targetId));
-                        dispatch(setIsDelete(false));
+                        listOfPostsStore.deletePost(appStore.targetId);
+                        deletePostStore.setIsDelete(false);
                     }}
                 >
                     Да
                 </Button>
                 <Button
                     variant="secondary"
-                    onClick={() => dispatch(setIsDelete(false))}
+                    onClick={() => deletePostStore.setIsDelete(false)}
                 >
                     Нет
                 </Button>
             </Modal.Body>
         </Modal>
     );
-};
+});
 
-export default memo(DeletePost);
+export default DeletePost;

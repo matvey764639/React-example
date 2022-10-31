@@ -1,41 +1,31 @@
-import React, { memo, useEffect } from "react";
+import React, { useEffect } from "react";
 import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
-import { useDispatch, useSelector } from "react-redux";
-import { setEditPost, setIsEdit } from "./editPostSlice";
-import { replacePost } from "./listOfPostsSlice";
-import { PostItem } from "./listOfPostsSlice";
-import { StoreType } from "../app/store";
+import { listOfPostsStore } from "./ListOfPostsStore";
+import { appStore } from "../AppStore";
+import { editPostStore } from "./EditPostStore";
+import { observer } from "mobx-react-lite";
 
-const EditPost: React.FC = () => {
-    const isEdit = useSelector<StoreType, boolean>(
-        ({ editPost }) => editPost.isEdit
-    );
-    const targetId = useSelector<StoreType, number>(({ app }) => app.targetId);
-    const posts = useSelector<StoreType, PostItem[]>(
-        ({ posts }) => posts.posts
-    );
-    let post = {
-        ...useSelector<StoreType, PostItem>(({ editPost }) => editPost.post),
-    };
-    const dispatch = useDispatch();
+const EditPost: React.FC = observer(() => {
+    const posts = listOfPostsStore.posts;
+    const post = editPostStore.post;
     const getPostById = (targetId: number) => {
         let filteredPosts = posts.filter((p) => p.id === targetId);
         let ind = posts.indexOf(filteredPosts[0]);
         return posts[ind];
     };
     useEffect(() => {
-        const newPost = { ...getPostById(targetId) };
-        dispatch(setEditPost(newPost));
+        const newPost = { ...getPostById(appStore.targetId) };
+        editPostStore.setPost(newPost);
     }, []);
 
     const handleSave = () => {
-        dispatch(replacePost(post));
-        dispatch(setIsEdit(false));
+        listOfPostsStore.replacePost(post);
+        editPostStore.setIsEdit(false);
     };
 
     return (
-        <Modal show={isEdit}>
+        <Modal show={editPostStore.isEdit}>
             <Modal.Header>
                 <Modal.Title>Edit post</Modal.Title>
             </Modal.Header>
@@ -47,8 +37,7 @@ const EditPost: React.FC = () => {
                     <input
                         value={post.title}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                            post.title = e.target.value;
-                            dispatch(setEditPost(post));
+                            editPostStore.setTitle(e.target.value);
                         }}
                         type="email"
                         className="form-control"
@@ -63,8 +52,7 @@ const EditPost: React.FC = () => {
                     <input
                         value={post.body}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                            post.body = e.target.value;
-                            dispatch(setEditPost(post));
+                            editPostStore.setBody(e.target.value);
                         }}
                         type="email"
                         className="form-control"
@@ -76,7 +64,7 @@ const EditPost: React.FC = () => {
             <Modal.Footer>
                 <Button
                     variant="secondary"
-                    onClick={() => dispatch(setIsEdit(false))}
+                    onClick={() => editPostStore.setIsEdit(false)}
                 >
                     Close
                 </Button>
@@ -86,6 +74,6 @@ const EditPost: React.FC = () => {
             </Modal.Footer>
         </Modal>
     );
-};
+});
 
-export default memo(EditPost);
+export default EditPost;
